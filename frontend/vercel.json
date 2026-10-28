@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": " https://ieml-programme-manager.onrender.com"
+      "destination": "https://ieml-programme-manager.onrender.com/api/:path*"
     }
   ]
 }
