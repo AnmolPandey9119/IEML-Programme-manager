@@ -1,8 +1,12 @@
+import logging
+import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401  (tables register hone ke liye)
@@ -11,10 +15,29 @@ from .migrate import add_missing_columns
 from .routers import applications, auth, events, exports, groups, public, sessions, setup, speakers, team
 
 
+log = logging.getLogger("startup")
+_db_ready = threading.Event()
+
+
+def _init_db() -> None:
+    """DB setup background mein chalta hai taaki server ka port turant khul jaye (Render ko port chahiye).
+    Remote / cold-start database par ye kuch seconds le sakta hai, isliye retry ke saath."""
+    for attempt in range(1, 11):
+        try:
+            Base.metadata.create_all(bind=engine)
+            add_missing_columns()
+            _db_ready.set()
+            log.warning("Database ready")
+            return
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Database init attempt %s failed: %s", attempt, exc)
+            time.sleep(min(3 * attempt, 15))
+    log.error("Database init failed after retries")
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    add_missing_columns()
+    threading.Thread(target=_init_db, daemon=True).start()
     yield
 
 
@@ -24,6 +47,13 @@ app = FastAPI(title="Session, Speaker & List Management System", lifespan=lifesp
 # The public agenda must be readable from any event website. GET only, no cookies and no custom headers,
 # so the authenticated team API cannot be called from another origin.
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=[], allow_credentials=False)
+
+
+@app.middleware("http")
+async def wait_for_db(request: Request, call_next):
+    if not _db_ready.is_set() and request.url.path.startswith("/api"):
+        return JSONResponse({"detail": "Server is starting up, please retry in a few seconds."}, status_code=503)
+    return await call_next(request)
 
 
 @app.get("/health")

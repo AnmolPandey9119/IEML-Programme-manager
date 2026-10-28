@@ -9,7 +9,7 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
 
 _connect_args = (
-    {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {"connect_timeout": 15}
 )
 engine = create_engine(
     DATABASE_URL, connect_args=_connect_args, pool_pre_ping=True
