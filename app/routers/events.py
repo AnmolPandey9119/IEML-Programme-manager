@@ -21,10 +21,12 @@ def event_out(event: Event, role: Role, db: DB | None = None) -> EventOut:
     out = EventOut.model_validate(event)
     out.my_role = role
     if db is not None:
-        count = lambda model: db.scalar(select(func.count(model.id)).where(model.event_id == event.id)) or 0
-        out.counts = {"sessions": count(Session), "speakers": count(Speaker), "groups": count(Group),
-                      "pending_applications": db.scalar(select(func.count(SpeakerApplication.id)).where(
-                          SpeakerApplication.event_id == event.id, SpeakerApplication.status == APP_PENDING)) or 0}
+        one = lambda model, *extra: select(func.count(model.id)).where(model.event_id == event.id, *extra).scalar_subquery()
+        n_sessions, n_speakers, n_groups, n_pending = db.execute(select(
+            one(Session), one(Speaker), one(Group), one(SpeakerApplication, SpeakerApplication.status == APP_PENDING)
+        )).one()
+        out.counts = {"sessions": n_sessions or 0, "speakers": n_speakers or 0, "groups": n_groups or 0,
+                      "pending_applications": n_pending or 0}
     return out
 
 

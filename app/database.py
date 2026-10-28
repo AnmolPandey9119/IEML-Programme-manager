@@ -11,8 +11,14 @@ if DATABASE_URL.startswith("postgres://"):
 _connect_args = (
     {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {"connect_timeout": 15}
 )
+_is_sqlite = DATABASE_URL.startswith("sqlite")
+if not _is_sqlite:
+    # Dead connections ko TCP keepalive pakadta hai; pool_recycle Neon ke idle-suspend (5 min) se pehle purane
+    # connection badal deta hai. Isse har request par extra "ping" round-trip (pool_pre_ping) bachta hai.
+    _connect_args.update({"keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 3})
 engine = create_engine(
-    DATABASE_URL, connect_args=_connect_args, pool_pre_ping=True
+    DATABASE_URL, connect_args=_connect_args,
+    **({} if _is_sqlite else {"pool_size": 5, "max_overflow": 5, "pool_recycle": 240, "pool_timeout": 20}),
 )
 if DATABASE_URL.startswith("sqlite"):
     @sa_event.listens_for(engine, "connect")

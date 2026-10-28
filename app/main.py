@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import threading
 import time
@@ -6,6 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -17,6 +19,7 @@ from .routers import applications, auth, events, exports, groups, public, sessio
 
 log = logging.getLogger("startup")
 _db_ready = threading.Event()
+_db_booting = threading.Event()  # sirf tab set hota hai jab lifespan ne background init shuru kiya
 
 
 def _init_db() -> None:
@@ -37,7 +40,10 @@ def _init_db() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    _db_booting.set()
     threading.Thread(target=_init_db, daemon=True).start()
+    # Fast DB ho to port khulne se pehle hi ready (best case); slow ho to 3s baad port khul jata hai, setup peeche chalta rehta hai.
+    await asyncio.to_thread(_db_ready.wait, 3)
     yield
 
 
@@ -46,12 +52,13 @@ app = FastAPI(title="Session, Speaker & List Management System", lifespan=lifesp
 
 # The public agenda must be readable from any event website. GET only, no cookies and no custom headers,
 # so the authenticated team API cannot be called from another origin.
+app.add_middleware(GZipMiddleware, minimum_size=800)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=[], allow_credentials=False)
 
 
 @app.middleware("http")
 async def wait_for_db(request: Request, call_next):
-    if not _db_ready.is_set() and request.url.path.startswith("/api"):
+    if _db_booting.is_set() and not _db_ready.is_set() and request.url.path.startswith("/api"):
         return JSONResponse({"detail": "Server is starting up, please retry in a few seconds."}, status_code=503)
     return await call_next(request)
 

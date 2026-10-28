@@ -39,10 +39,11 @@ def event_ctx(min_role: Role = Role.viewer, write: bool = False):
     - write=True aur event Archived -> 403 (read-only)
     """
     def dep(event_id: int, user: User = Depends(get_current_user), db: DB = Depends(get_db)) -> EventCtx:
-        member = db.scalar(
-            select(EventMember).where(EventMember.event_id == event_id, EventMember.user_id == user.id)
-        )
-        event = db.get(Event, event_id) if member else None
+        row = db.execute(
+            select(EventMember, Event).join(Event, Event.id == EventMember.event_id)
+            .where(EventMember.event_id == event_id, EventMember.user_id == user.id)
+        ).first()
+        member, event = (row[0], row[1]) if row else (None, None)
         if not member or not event:
             raise HTTPException(404, "Event not found")
         if ROLE_RANK[member.role] < ROLE_RANK[min_role]:

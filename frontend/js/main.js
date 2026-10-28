@@ -25,6 +25,7 @@ const TABS = [
 ];
 
 let renderToken = 0;
+let cachedEventId = null; // same event ke tabs ke beech event dobara fetch na ho
 window.__refresh = () => route(true);
 window.addEventListener('hashchange', () => route());
 window.addEventListener('load', () => route());
@@ -44,13 +45,20 @@ async function route(keepScroll = false) {
     if (my !== renderToken) return;
 
     if (parts[0] === 'event' && parts[1]) {
-      S.event = await api('/events/' + parts[1]);
+      if (cachedEventId === parts[1] && S.event && !keepScroll) {
+        // Tab switch: purana event turant use karein, taaki ek poora round-trip bache; counts peeche se refresh.
+        api('/events/' + parts[1]).then((e) => { if (cachedEventId === parts[1]) S.event = e; }).catch(() => {});
+      } else {
+        S.event = await api('/events/' + parts[1]);
+        cachedEventId = parts[1];
+      }
       const tab = TABS.find((t) => t.key === parts[2]) || (S.event.halls.length ? TABS[0] : TABS.find((t) => t.key === 'setup'));
       if (!parts[2] && tab) { history.replaceState(null, '', `#/event/${S.event.id}/${tab.key}`); }
       const body = await tab.view({ event: S.event, param: parts[3], go: route });
       if (my !== renderToken) return;
       mount($('#app'), shell(tab, body));
     } else {
+      cachedEventId = null;
       const body = await viewEvents();
       if (my !== renderToken) return;
       mount($('#app'), plainShell(body));
