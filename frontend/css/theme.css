@@ -1,0 +1,154 @@
+/* Theme: "IEML Heritage" (light) and "IEML Midnight" (dark).
+   Company-wide look for every event. Colours come from the IEML logo and the India Expo Centre gate:
+   Navy (logo body), Teal (logo crest), Champagne gold (globe highlight), Brick (gate lettering), Ivory (stone facade).
+   Loaded after app.css. It redefines the colour variables, fixes the few hard-coded colours and styles the brand block. */
+
+/* ---------------------------------------------------------------- light */
+:root{
+    color-scheme:light;
+    --paper:#f6f4ee; --surface:#fffefb; --sunk:#f1eee6; --sunk-2:#e8e4d9;
+    --ink:#101c3d; --ink-2:#434e6b; --ink-3:#7a829a;
+    --rule:#e3ded1; --rule-2:#ece8dd;
+    --primary:#1d3f91; --primary-d:#142f72; --primary-soft:#e4eaf8; --on-primary:#fff;
+    --teal:#2f8f8a; --teal-soft:#dcefee;
+    --accent:#c19a45;
+    --amber:#946506; --amber-soft:#f8edd0;
+    --brick:#a8392b; --brick-soft:#f8e6e1;
+    --green:#1d7a4d; --green-soft:#e0f2e8;
+    --blue:#2f5bc0; --blue-soft:#e5ebf9;
+    --rail:#0e1a42; --rail-ink:#c3cce6; --rail-dim:#8190b5;
+    --shadow:0 1px 2px rgba(16,28,61,.05),0 8px 24px -14px rgba(16,28,61,.24);
+    --hero-a:#0e1a42; --hero-b:#1d3f91; --hero-glow:#c19a4540;
+  }
+  body{background:var(--paper);background-image:radial-gradient(1100px 480px at 88% -12%,#c19a4514,transparent 62%),radial-gradient(900px 420px at -8% -10%,#1d3f910c,transparent 60%)}
+  ::selection{background:color-mix(in srgb,var(--accent) 38%,transparent)}
+  
+  /* ---------------------------------------------------------------- dark */
+  html[data-theme="dark"]{
+    color-scheme:dark;
+    --paper:#080f24; --surface:#101a38; --sunk:#0b1329; --sunk-2:#192446;
+    --ink:#eaeefa; --ink-2:#b5bfd8; --ink-3:#8590ac;
+    --rule:#223058; --rule-2:#1a2547;
+    --primary:#7fa3ff; --primary-d:#a3bdff; --primary-soft:#15245a; --on-primary:#06122e;
+    --teal:#56c0b6; --teal-soft:#10312f;
+    --accent:#d9b560;
+    --amber:#e6b24d; --amber-soft:#35290f;
+    --brick:#f08b7a; --brick-soft:#3a1e1b;
+    --green:#5fcf98; --green-soft:#12301f;
+    --blue:#8fa9ff; --blue-soft:#1a2547;
+    --rail:#060c1d; --rail-ink:#b6c0dc; --rail-dim:#7b89ad;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.65);
+    --hero-a:#0b1636; --hero-b:#16307a; --hero-glow:#d9b56030;
+  }
+  html[data-theme="dark"] body{background-image:radial-gradient(1100px 480px at 88% -12%,#d9b5600d,transparent 62%),radial-gradient(900px 420px at -8% -10%,#7fa3ff0f,transparent 60%)}
+  
+  /* ---------------------------------------------------------------- shared refinements */
+    .nav a.on{background:#ffffff17;color:#fff;box-shadow:inset 3px 0 0 var(--accent)}
+    .nav a.on .count{background:#ffffff26;color:#fff}
+    .btn:hover{border-color:var(--ink-3)}
+    .btn.primary{color:var(--on-primary)}
+    .btn.danger:hover{border-color:var(--brick)}
+    input:hover,select:hover,textarea:hover{border-color:var(--ink-3)}
+    input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 28%,transparent)}
+    input::placeholder,textarea::placeholder{color:var(--ink-3);opacity:.8}
+    .seg{background:var(--sunk-2)}
+    .pill,.pill.draft{background:var(--sunk-2)}
+    .pill.green,.pill.active,.pill.confirmed{background:var(--green-soft)}
+    .pill.amber,.pill.tentative,.pill.archived{background:var(--amber-soft)}
+    .pill.brick,.pill.declined{background:var(--brick-soft)}
+    .pill.blue,.pill.invited{background:var(--blue-soft)}
+    .tile .ph{background:var(--sunk-2)}.tile:hover{border-color:var(--primary)}
+    .banner,.note.amber,.wbox.notice{color:var(--amber)}
+    .note{color:var(--blue)}
+    .wbox{color:var(--brick)}
+    .export-row{background:var(--surface)}.export-row:hover{background:var(--primary-soft)}
+    .daytab:hover,.chipb:hover,.gitem:hover{border-color:var(--ink-3)}
+    .chipb.on,.gitem.on{border-color:var(--primary)}
+    .switch i{background:var(--sunk-2)}.switch i{box-shadow:inset 0 0 0 1px var(--rule)}
+    
+    /* ---------------------------------------------------------------- dark-only fixes */
+    html[data-theme="dark"] .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px #0006}
+    html[data-theme="dark"] .daytab.on,html[data-theme="dark"] .ov-tabs button.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+    html[data-theme="dark"] .daytab.on span,html[data-theme="dark"] .ov-tabs button.on span{color:var(--ink-2)}
+    html[data-theme="dark"] .toast{background:#1c2a52;color:#fff}
+    html[data-theme="dark"] .toast.err{background:#7a2c22}
+    html[data-theme="dark"] #layer .scrim{background:#030812cc}
+    html[data-theme="dark"] .tchip,html[data-theme="dark"] .ov-tags em{background:color-mix(in srgb,var(--tc) 24%,transparent);color:color-mix(in srgb,var(--tc) 50%,#fff)}
+    html[data-theme="dark"] .blk{background:color-mix(in srgb,var(--tc) 22%,var(--surface))}
+    html[data-theme="dark"] .blk.merged{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--tc) 22%,var(--surface)) 0 10px,color-mix(in srgb,var(--tc) 12%,var(--surface)) 10px 20px)}
+    html[data-theme="dark"] .ov-row:hover{background:color-mix(in srgb,var(--tc) 12%,var(--surface))}
+    html[data-theme="dark"] .ov-row.warn{border-color:#6a3029}
+    /* initials placeholders are pastel by design: invert them in dark mode (keeps hue, turns light fill dark and dark text light) */
+    html[data-theme="dark"] .av:not(:has(img)),html[data-theme="dark"] .tile .ph:not(:has(img)){filter:invert(1) hue-rotate(180deg) saturate(.8)}
+    html[data-theme="dark"] .me .av{filter:none}
+    html[data-theme="dark"] .tile .ph:not(:has(img)) .pill{filter:invert(1) hue-rotate(180deg)}
+    html[data-theme="dark"] .code{background:#060c1d;color:#cfdcff;border:1px solid var(--rule)}
+    html[data-theme="dark"] .srow.has-warn{background:linear-gradient(90deg,#f08b7a14,transparent)}
+    
+    /* ---------------------------------------------------------------- theme toggle */
+    .theme-btn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;border:0;background:transparent;color:var(--rail-dim);cursor:pointer;padding:0}
+    .theme-btn:hover{color:#fff;background:#ffffff14}
+    .theme-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .theme-btn .sun{display:none}
+    html[data-theme="dark"] .theme-btn .sun{display:block}
+    html[data-theme="dark"] .theme-btn .moon{display:none}
+    .plain-top .theme-btn{color:var(--ink-2)}.plain-top .theme-btn:hover{color:var(--ink);background:var(--sunk-2)}
+    .theme-float{position:fixed;top:16px;right:16px;z-index:40;border:1px solid var(--rule);background:var(--surface);color:var(--ink-2);box-shadow:var(--shadow);border-radius:50%;width:40px;height:40px}
+    .theme-float:hover{color:var(--ink);background:var(--sunk)}
+    body:has(.shell) .theme-float,body:has(.plain-top) .theme-float{display:none}
+    @media print{.theme-btn,.theme-float{display:none!important}}
+  
+  /* ---------------------------------------------------------------- IEML brand block */
+  .rail{background:linear-gradient(180deg,#0e1a42 0%,#0b1538 100%);border-right:1px solid #ffffff0d}
+  html[data-theme="dark"] .rail{background:linear-gradient(180deg,#070d22 0%,#050a1a 100%)}
+  .rail::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--accent),#c19a4500 85%);pointer-events:none}
+  .brand{gap:11px;padding:2px 4px 20px;min-width:0}
+  .brand .mark{width:40px;height:40px;border-radius:12px;background:#fff;padding:5px;box-shadow:0 0 0 1px #ffffff26,0 6px 16px -6px #000a;flex:none}
+  .brand .mark img{display:block;width:100%;height:100%;object-fit:contain}
+  .brand-txt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+  .brand-txt b{font:600 14px/1.15 var(--display);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis}
+  .brand-txt small{margin-top:3px;font:500 9.5px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  .plain-top{background:var(--surface);border-bottom:1px solid var(--rule);box-shadow:inset 0 -2px 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}
+  .plain-top .brand{padding:0}
+  .plain-top .brand .mark{background:#fff;padding:4px;width:38px;height:38px;box-shadow:0 0 0 1px var(--rule)}
+  .plain-top .brand-txt b{color:var(--ink)}
+  .plain-top .brand-txt small{color:var(--ink-3)}
+  .ev-card{border:1px solid #ffffff14;background:linear-gradient(135deg,#ffffff12,#ffffff08)}
+  .ev-card:hover{border-color:#c19a4566}
+  .topbar{background:linear-gradient(90deg,#0e1a42,#14296b)}
+  html[data-theme="dark"] .topbar{background:#070d22}
+  @media(max-width:900px){.rail.open{box-shadow:0 0 0 100vmax #060c1d99}}
+  
+  /* buttons, panels */
+  .btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--primary) 92%,#fff) 0%,var(--primary) 100%);box-shadow:0 1px 0 #ffffff26 inset,0 6px 14px -8px var(--primary)}
+  .btn.primary:hover{background:var(--primary-d)}
+  .btn.quiet:hover{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+  #layer .scrim{background:#0b153685}
+  .toast{background:#101c3d}
+  .panel,.card{border-color:var(--rule)}
+  .daytab.on{background:var(--rail);border-color:var(--rail);box-shadow:inset 0 -3px 0 var(--accent)}
+  .ov-hero{border:1px solid #ffffff1a}
+  .code{background:#0c1636;color:#d6e0fb}
+  
+  /* login */
+  .auth-art{background:linear-gradient(158deg,#0b1538 0%,#122766 58%,#1d3f91 140%)}
+  .auth-art>*{position:relative;z-index:2}
+  .auth-art::before{content:"";position:absolute;inset:0;z-index:0;background:url(/assets/expo-gate.jpg) center bottom/cover no-repeat;opacity:.16;mix-blend-mode:luminosity;filter:blur(.6px);
+    -webkit-mask-image:linear-gradient(to top,#000 0%,#0008 45%,transparent 82%);mask-image:linear-gradient(to top,#000 0%,#0008 45%,transparent 82%)}
+  .auth-art::after{content:"";position:absolute;z-index:1;right:-140px;top:-140px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,#c19a4538,transparent 66%);pointer-events:none}
+  .auth-art h1{font-weight:600;text-wrap:balance}
+  .auth-art .sched div{background:#ffffff10;border:1px solid #ffffff12;border-left:3px solid var(--c,#c19a45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .auth-art .brand .mark{width:52px;height:52px;border-radius:14px;padding:6px}
+  .auth-art .brand-txt b{font-size:19px}
+  .auth-art .brand-txt small{font-size:10px}
+  .auth-mobile-brand{display:none;align-items:center;gap:12px;margin-bottom:26px}
+  .auth-mobile-brand .mark{width:46px;height:46px;border-radius:12px;background:#fff;padding:5px;box-shadow:0 0 0 1px var(--rule)}
+  .auth-mobile-brand img{display:block;width:100%;height:100%;object-fit:contain}
+  .auth-mobile-brand b{display:block;font:600 17px/1.15 var(--display)}
+  .auth-mobile-brand small{display:block;margin-top:3px;font:500 9.5px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+  .auth-form .box{position:relative}
+  .auth-form h2::after{content:"";display:block;width:34px;height:3px;border-radius:2px;background:var(--accent);margin-top:10px}
+  @media(max-width:860px){.auth-mobile-brand{display:flex}}
+  
+  /* print: keep paper clean */
+  @media print{.rail::after,.plain-top{box-shadow:none}}

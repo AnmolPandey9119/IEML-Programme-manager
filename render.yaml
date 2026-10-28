@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: session-manager-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DATABASE_URL        # Neon Postgres connection string (dashboard mein paste karein)
+        sync: false
+      - key: SECRET_KEY          # Render khud ek random value bana dega
+        generateValue: true
+      - key: FRONTEND_URL        # Vercel ka URL, jaise https://your-app.vercel.app
+        sync: false
+      - key: EVENT_TIMEZONE
+        value: Asia/Kolkata
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "720"
+      - key: INVITE_EXPIRE_DAYS
+        value: "7"
+      - key: MAX_PHOTO_MB
+        value: "5"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
