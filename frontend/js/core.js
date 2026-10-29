@@ -119,7 +119,7 @@ export const statusPill = (st) => html`<span class="pill ${STATUS_DOT[st] || ''}
    show a friendly notice and keep retrying quietly until the server answers. */
 const WAKE_AFTER_MS = 3000;     // show the notice if a request is still pending after this long
 const WAKE_RETRY_MS = 3000;     // pause between retries while the server starts
-const WAKE_GIVE_UP_MS = 120000; // stop retrying after this long
+const WAKE_GIVE_UP_MS = 150000; // stop retrying after this long
 let wakePending = 0, wakeTimer = null, wakeShown = false, wakeEl = null;
 
 function wakeStyles() {
@@ -166,6 +166,45 @@ function wakeBegin() { if (++wakePending === 1) wakeTimer = setTimeout(showWake,
 function wakeEnd() { if (--wakePending <= 0) { wakePending = 0; clearTimeout(wakeTimer); hideWake(); } }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* Waking the backend.
+   The Vercel proxy (/api/...) alone does not reliably wake a sleeping Render service, which is why the page used to
+   stay stuck until someone opened the Render link by hand. So the browser calls the backend's /health URL directly,
+   which is exactly what opening that link does: Render holds the request while it starts and answers when it is up.
+   Set the address once in index.html:  <meta name="backend-url" content="https://your-service.onrender.com"> */
+const BACKEND = (document.querySelector('meta[name="backend-url"]')?.content || '').trim().replace(/\/+$/, '');
+const AWAKE_FOR_MS = 8 * 60 * 1000;   // Render sleeps after ~15 min idle; re-check after 8 min without a successful call
+let lastOk = 0, awakeJob = null;
+
+async function fetchWithTimeout(url, ms) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try { return await fetch(url, { cache: 'no-store', signal: ctl.signal }); } finally { clearTimeout(t); }
+}
+async function backendUp() {
+  try {   // 1) straight to the backend: this is what wakes it
+    const r = await fetchWithTimeout(BACKEND + '/health?t=' + Date.now(), 75000);
+    if (r.ok) { const d = await r.json().catch(() => ({})); if (d.db !== false) return true; }
+  } catch { /* still asleep, or the browser could not read the answer */ }
+  try {   // 2) through the proxy, in case the direct call is blocked
+    const r = await fetchWithTimeout('/api/auth/setup-status?t=' + Date.now(), 8000);
+    return r.ok;
+  } catch { return false; }
+}
+function ensureAwake(force = false) {
+  if (force) lastOk = 0;
+  if (!BACKEND || Date.now() - lastOk < AWAKE_FOR_MS) return Promise.resolve();
+  if (!awakeJob) awakeJob = (async () => {
+    wakeBegin();                                        // the "waking up" card appears if this takes more than a few seconds
+    try {
+      const t0 = Date.now();
+      while (Date.now() - t0 < WAKE_GIVE_UP_MS) {
+        if (await backendUp()) { lastOk = Date.now(); return; }
+        await sleep(2000);
+      }
+    } finally { wakeEnd(); awakeJob = null; }
+  })();
+  return awakeJob;
+}
+
 export async function api(path, method = 'GET', body, opts = {}) {
   const headers = {};
   if (S.token) headers.Authorization = 'Bearer ' + S.token;
@@ -173,6 +212,7 @@ export async function api(path, method = 'GET', body, opts = {}) {
   if (body instanceof FormData) payload = body;
   else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
 
+  await ensureAwake();                                            // no request is sent to a sleeping server
   const started = Date.now();
   let res;
   wakeBegin();
@@ -193,10 +233,12 @@ export async function api(path, method = 'GET', body, opts = {}) {
         err.status = 503; throw err;
       }
       showWake();                                                // we know the backend is down: tell the user now
-      await sleep(WAKE_RETRY_MS);
+      await ensureAwake(true);                                   // wake it directly, then retry through the proxy
+      await sleep(BACKEND ? 400 : WAKE_RETRY_MS);
     }
   } finally { wakeEnd(); }
 
+  lastOk = Date.now();
   if (opts.blob && res.ok) return { blob: await res.blob(), name: filenameFrom(res) };
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
@@ -230,6 +272,12 @@ export function toast(msg, kind = 'ok') {
   $('#toasts').append(el);
   setTimeout(() => el.remove(), kind === 'err' ? 6000 : 3500);
 }
+
+/* ---------------------------------------------------------------- brand (IEML logo + EventCore mark) */
+/** One lockup used everywhere: IEML logo | EventCore mark, then the product name. `pill` adds the "Internal" tag. */
+export const intPill = () => html`<span class="int-pill" title="Internal IEML tool">${icon('lock', 'sm')} Internal</span>`;
+export const brandInner = ({ pill = false } = {}) => html`<span class="brand-chips"><span class="mark"><img src="/assets/ieml-logo.png" alt="India Exposition Mart Ltd."></span><i class="sep" aria-hidden="true"></i><span class="mark"><img src="/assets/ec-mark.png" alt="EventCore"></span>${pill ? intPill() : ''}</span><span class="brand-txt"><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></span>`;
+export const intNote = () => html`<div class="int-note">${icon('shield')}<div><b>Internal IEML tool</b><span>Only authorised IEML team members can use this system. Access is by invitation from an event admin.</span></div></div>`;
 
 /** Wraps an action so failures show an error toast instead of silently breaking. */
 export const guard = (fn) => async (...a) => {
@@ -370,3 +418,6 @@ export function timeOptions() {
   for (let m = 6 * 60; m <= 23 * 60 + 45; m += 15) out += `<option value="${to12(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)}">`;
   return raw(out);
 }
+
+/* Start waking the backend as soon as the app opens, so it is usually ready before the user clicks anything. */
+ensureAwake();

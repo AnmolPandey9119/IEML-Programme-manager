@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Event days are calendar dates; "within 48 hours of the event day" is measured in this zone.
     EVENT_TIMEZONE: str = "Asia/Kolkata"
     MAX_PHOTO_MB: int = 5
+    # Internal tool: if set (comma separated, e.g. "iemltd.com,ieml.in"), only these email domains can create the first admin,
+    # be invited, or open an account. Empty = no domain restriction.
+    ALLOWED_EMAIL_DOMAINS: str = ""
 
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

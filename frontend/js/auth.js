@@ -1,7 +1,7 @@
-import { api, S, acts, guard, html, icon, mount, setToken, val, raw_val, field, $ } from './core.js';
+import { api, S, acts, guard, html, icon, mount, setToken, val, raw_val, field, $, brandInner, intNote } from './core.js';
 
 const art = html`<aside class="auth-art">
-  <a class="brand" href="#/login"><span class="mark"><img src="/assets/ec-mark.png" alt=""></span><span class="brand-txt"><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></span></a>
+  <a class="brand" href="#/login">${brandInner({ pill: true })}</a>
   <div>
     <h1>Plan the whole programme in one place.</h1>
     <p>Sessions, speakers and committees for your organising team, kept in step with your event website.</p>
@@ -14,7 +14,7 @@ const art = html`<aside class="auth-art">
 </aside>`;
 
 function authPage(inner) {
-  mount($('#app'), html`<div class="auth-wrap">${art}<main class="auth-form"><div class="box"><div class="auth-mobile-brand"><span class="mark"><img src="/assets/ec-mark.png" alt=""></span><div><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></div></div>${inner}</div></main></div>`);
+  mount($('#app'), html`<div class="auth-wrap">${art}<main class="auth-form"><div class="box"><div class="auth-mobile-brand">${brandInner()}</div>${inner}${intNote()}</div></main></div>`);
 }
 
 export async function viewLogin() {
@@ -23,8 +23,7 @@ export async function viewLogin() {
   authPage(html`<h2>Welcome back</h2><p class="lead">Sign in with the email address your invitation was sent to.</p>
     ${field('Email', html`<input id="email" type="email" autocomplete="username" data-autofocus>`)}
     ${field('Password', html`<input id="pw" type="password" autocomplete="current-password" data-enter="login">`)}
-    <button class="btn primary block" data-act="login">Sign in</button>
-    <p class="muted small" style="margin-top:16px">Access is by invitation only. Ask your event admin if you need an invite.</p>`);
+    <button class="btn primary block" data-act="login">Sign in</button>`);
   $('#email')?.focus();
 }
 

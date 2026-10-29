@@ -21,6 +21,8 @@ services:
         value: "720"
       - key: INVITE_EXPIRE_DAYS
         value: "7"
+      - key: ALLOWED_EMAIL_DOMAINS   # optional: sirf IEML ke email domain, jaise iemltd.com (comma se alag)
+        sync: false
       - key: MAX_PHOTO_MB
         value: "5"
       - key: SMTP_HOST

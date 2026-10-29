@@ -65,7 +65,9 @@ async def wait_for_db(request: Request, call_next):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    # "db" is false only while the background database setup is still running (cold start).
+    return JSONResponse({"status": "ok", "db": _db_ready.is_set() or not _db_booting.is_set()},
+                        headers={"Cache-Control": "no-store"})
 
 
 app.include_router(auth.router)

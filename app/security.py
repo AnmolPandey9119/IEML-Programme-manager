@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
+from fastapi import HTTPException
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -43,3 +44,11 @@ def photo_url(speaker_id: int, photo_hash: str) -> str:
     if not photo_hash:
         return ""
     return f"/api/media/speaker/{speaker_id}/{photo_hash}/{photo_signature(speaker_id, photo_hash)}"
+
+
+def require_internal_email(email: str) -> None:
+    """Internal IEML tool: when ALLOWED_EMAIL_DOMAINS is set, only addresses from those domains are accepted."""
+    domains = [d.strip().lower().lstrip("@") for d in settings.ALLOWED_EMAIL_DOMAINS.split(",") if d.strip()]
+    if domains and email.strip().lower().rsplit("@", 1)[-1] not in domains:
+        raise HTTPException(403, "This is an internal IEML tool. Please use your IEML email address ("
+                                 + ", ".join("@" + d for d in domains) + ").")

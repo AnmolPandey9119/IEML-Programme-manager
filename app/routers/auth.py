@@ -9,7 +9,7 @@ from ..timeutil import utcnow
 from ..deps import get_current_user
 from ..models import Event, EventMember, Invitation, User
 from ..schemas import (AcceptInviteIn, InvitePreview, LoginIn, SetupIn, TokenOut, UserOut)
-from ..security import create_access_token, hash_password, verify_password
+from ..security import create_access_token, hash_password, require_internal_email, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -39,6 +39,7 @@ def first_time_setup(data: SetupIn, db: DB = Depends(get_db)):
     """Sirf tab chalta hai jab system mein koi user na ho (pehla admin). Self-registration nahi."""
     if db.scalar(select(func.count(User.id))) > 0:
         raise HTTPException(403, "Setup already completed. Ask an admin for an invitation.")
+    require_internal_email(data.email)
     user = User(email=_norm(data.email), full_name=data.full_name.strip(),
                 password_hash=hash_password(data.password))
     db.add(user)
@@ -95,6 +96,7 @@ def accept_invite(data: AcceptInviteIn, db: DB = Depends(get_db)):
         if not user.is_active or not verify_password(data.password, user.password_hash):
             raise HTTPException(401, "Incorrect password for this existing account")
     else:
+        require_internal_email(inv.email)
         if not data.full_name.strip():
             raise HTTPException(422, "Full name is required")
         user = User(email=inv.email, full_name=data.full_name.strip(),
