@@ -1,4 +1,4 @@
-import { api, S, html, icon, mount, toast, $, logout, acts, esc, plural, brandInner, intPill } from './core.js';
+import { api, S, html, icon, mount, toast, $, logout, acts, esc, plural, brandInner, appFooter } from './core.js';
 import { viewLogin, viewFirstSetup, viewInvite } from './auth.js';
 import { viewEvents, viewSetup, viewTeam } from './events.js';
 import { viewSpeakers } from './speakers.js';
@@ -77,9 +77,9 @@ const userBlock = () => html`<div class="me"><span class="av sm" style="backgrou
   ${themeBtn}<button data-act="logout" aria-label="Sign out" title="Sign out">${icon('logout')}</button></div>`;
 
 function plainShell(body) {
-  return html`<header class="plain-top"><a class="brand" href="#/events">${brandInner()}</a><span class="sp"></span>${intPill()}${themeBtn}
+  return html`<header class="plain-top"><a class="brand" href="#/events">${brandInner()}</a><span class="sp"></span>${themeBtn}
     <span class="soft small">${S.me.user.full_name || S.me.user.email}</span><button class="btn sm" data-act="logout">${icon('logout', 'sm')} Sign out</button></header>
-    <main class="main"><div class="inner">${body}</div></main>`;
+    <main class="main"><div class="inner">${body}</div></main>${appFooter()}`;
 }
 
 function shell(active, body) {
@@ -87,16 +87,16 @@ function shell(active, body) {
   const link = (t) => html`<a href="#/event/${ev.id}/${t.key}" class="${t.key === active.key ? 'on' : ''}">${icon(t.icon)}<span>${t.label}</span>${t.count && t.count(c) ? html`<span class="count num">${t.count(c)}</span>` : ''}</a>`;
   return html`<div class="shell">
     <aside class="rail" id="rail">
-      <a class="brand" href="#/events">${brandInner({ pill: true })}</a>
+      <a class="brand" href="#/events">${brandInner()}</a>
       <a class="ev-card" href="#/events" title="Switch event"><b>${ev.name}${ev.edition ? ' ' + ev.edition : ''}</b>
         <span>${[ev.venue_city, ev.status[0].toUpperCase() + ev.status.slice(1)].filter(Boolean).join(', ')}</span></a>
       <nav class="nav" aria-label="Event sections">${TABS.filter((t) => !t.group).map(link)}<div class="sep"></div>${TABS.filter((t) => t.group).map(link)}</nav>
       <div class="grow"></div>${userBlock()}
     </aside>
-    <div><div class="topbar"><button data-act="toggleRail" aria-label="Open menu">${icon('menu', 'lg')}</button><b>${ev.name}</b></div>
+    <div class="shell-col"><div class="topbar"><button data-act="toggleRail" aria-label="Open menu">${icon('menu', 'lg')}</button><b>${ev.name}</b></div>
       <main class="main"><div class="inner">
         ${ev.status === 'archived' ? html`<div class="banner">${icon('archive', 'sm')}<span>This event is archived and read-only. An admin can set it back to Active in Event setup.</span></div>` : ''}
-        ${body}</div></main></div></div>`;
+        ${body}</div></main>${appFooter()}</div></div>`;
 }
 
 acts({
