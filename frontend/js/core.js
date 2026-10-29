@@ -112,13 +112,91 @@ export const STATUS_DOT = { Invited: 'invited', Confirmed: 'confirmed', Tentativ
 export const statusPill = (st) => html`<span class="pill ${STATUS_DOT[st] || ''}"><span class="dot"></span>${st}</span>`;
 
 /* ---------------------------------------------------------------- API */
+
+/* "Server waking up" notice.
+   Free hosting puts the backend to sleep when idle, and waking it takes 30-60 s. Without feedback the page looks
+   crashed. So: if a request is still pending after a few seconds, or the gateway says the backend is down (502/503/504),
+   show a friendly notice and keep retrying quietly until the server answers. */
+const WAKE_AFTER_MS = 3000;     // show the notice if a request is still pending after this long
+const WAKE_RETRY_MS = 3000;     // pause between retries while the server starts
+const WAKE_GIVE_UP_MS = 120000; // stop retrying after this long
+let wakePending = 0, wakeTimer = null, wakeShown = false, wakeEl = null;
+
+function wakeStyles() {
+  if (document.getElementById('wake-css')) return;
+  const st = document.createElement('style'); st.id = 'wake-css';
+  st.textContent = `
+  #wake{position:fixed;left:50%;top:16px;transform:translate(-50%,-12px);z-index:200;opacity:0;pointer-events:none;
+    transition:opacity .25s ease,transform .25s ease;width:min(440px,calc(100vw - 24px))}
+  #wake.on{opacity:1;transform:translate(-50%,0)}
+  #wake.mid{top:50%;transform:translate(-50%,calc(-50% - 12px))}
+  #wake.mid.on{transform:translate(-50%,-50%)}
+  #wake .card{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:14px;
+    background:var(--surface,#fff);color:var(--ink,#101c3d);border:1px solid var(--rule,#e3ded1);
+    box-shadow:var(--shadow,0 10px 30px -12px rgba(16,28,61,.35))}
+  #wake .spin{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;
+    border:3px solid var(--primary-soft,#e4eaf8);border-top-color:var(--primary,#1d3f91);animation:wakespin .9s linear infinite}
+  #wake b{display:block;font-size:15px;margin-bottom:3px}
+  #wake span.msg{display:block;font-size:13px;line-height:1.45;color:var(--ink-2,#434e6b)}
+  @keyframes wakespin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){#wake .spin{animation-duration:2.4s}#wake{transition:none}}`;
+  document.head.append(st);
+}
+function showWake() {
+  if (wakeShown || !wakePending) return;
+  wakeShown = true; wakeStyles();
+  if (!wakeEl) {
+    wakeEl = document.createElement('div'); wakeEl.id = 'wake'; wakeEl.setAttribute('role', 'status'); wakeEl.setAttribute('aria-live', 'polite');
+    wakeEl.innerHTML = '<div class="card"><div class="spin" aria-hidden="true"></div><div><b>Waking up the server&hellip;</b>' +
+      '<span class="msg">It was resting after a period of inactivity. This usually takes 30&ndash;60 seconds. ' +
+      'Please wait, your data is safe and the page will continue by itself.</span></div></div>';
+    document.body.append(wakeEl);
+  }
+  const app = document.getElementById('app');
+  wakeEl.classList.toggle('mid', !app || !app.firstElementChild); // nothing on screen yet -> centre the notice
+  requestAnimationFrame(() => wakeEl.classList.add('on'));
+}
+function hideWake() {
+  if (!wakeShown) return;
+  wakeShown = false;
+  if (wakeEl) wakeEl.classList.remove('on');
+  toast('Server is ready.');
+}
+function wakeBegin() { if (++wakePending === 1) wakeTimer = setTimeout(showWake, WAKE_AFTER_MS); }
+function wakeEnd() { if (--wakePending <= 0) { wakePending = 0; clearTimeout(wakeTimer); hideWake(); } }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 export async function api(path, method = 'GET', body, opts = {}) {
   const headers = {};
   if (S.token) headers.Authorization = 'Bearer ' + S.token;
   let payload;
   if (body instanceof FormData) payload = body;
   else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
-  const res = await fetch('/api' + path, { method, headers, body: payload });
+
+  const started = Date.now();
+  let res;
+  wakeBegin();
+  try {
+    for (;;) {
+      let failed = false;
+      try { res = await fetch('/api' + path, { method, headers, body: payload }); }
+      catch { res = null; failed = true; }                       // network error / backend unreachable
+      const down = failed || res.status === 502 || res.status === 503 || res.status === 504;
+      if (!down) break;
+      // Retrying is safe for reads, and for 502/503 on writes (the request never reached the app).
+      // A 504 or a dropped connection on a write may have been processed, so those are not repeated.
+      const safe = method === 'GET' || (!failed && res.status !== 504);
+      if (!safe || Date.now() - started > WAKE_GIVE_UP_MS) {
+        const err = new Error(safe
+          ? 'The server is taking longer than usual to start. Please wait a minute and try again.'
+          : 'The connection dropped. Please check that your change was saved before trying again.');
+        err.status = 503; throw err;
+      }
+      showWake();                                                // we know the backend is down: tell the user now
+      await sleep(WAKE_RETRY_MS);
+    }
+  } finally { wakeEnd(); }
+
   if (opts.blob && res.ok) return { blob: await res.blob(), name: filenameFrom(res) };
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));

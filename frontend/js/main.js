@@ -64,7 +64,7 @@ async function route(keepScroll = false) {
       mount($('#app'), plainShell(body));
     }
     if (keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
-    document.title = (S.event && parts[0] === 'event' ? S.event.name + ' · ' : '') + 'Programme Manager · IEML';
+    document.title = (S.event && parts[0] === 'event' ? S.event.name + ' · ' : '') + 'IEML Event Core';
   } catch (e) {
     if (e.status === 404 && parts[0] === 'event') { toast('That event was not found.', 'err'); location.hash = '#/events'; return; }
     toast(e.message, 'err');
@@ -77,7 +77,7 @@ const userBlock = () => html`<div class="me"><span class="av sm" style="backgrou
   ${themeBtn}<button data-act="logout" aria-label="Sign out" title="Sign out">${icon('logout')}</button></div>`;
 
 function plainShell(body) {
-  return html`<header class="plain-top"><a class="brand" href="#/events"><span class="mark"><img src="/assets/ieml-logo.png" alt=""></span><span class="brand-txt"><b>Programme Manager</b><small>India Exposition Mart Ltd.</small></span></a><span class="sp"></span>${themeBtn}
+  return html`<header class="plain-top"><a class="brand" href="#/events"><span class="mark"><img src="/assets/ieml-logo.png" alt=""></span><span class="brand-txt"><b>IEML Event Core</b><small>India Exposition Mart Ltd.</small></span></a><span class="sp"></span>${themeBtn}
     <span class="soft small">${S.me.user.full_name || S.me.user.email}</span><button class="btn sm" data-act="logout">${icon('logout', 'sm')} Sign out</button></header>
     <main class="main"><div class="inner">${body}</div></main>`;
 }
@@ -87,7 +87,7 @@ function shell(active, body) {
   const link = (t) => html`<a href="#/event/${ev.id}/${t.key}" class="${t.key === active.key ? 'on' : ''}">${icon(t.icon)}<span>${t.label}</span>${t.count && t.count(c) ? html`<span class="count num">${t.count(c)}</span>` : ''}</a>`;
   return html`<div class="shell">
     <aside class="rail" id="rail">
-      <a class="brand" href="#/events"><span class="mark"><img src="/assets/ieml-logo.png" alt=""></span><span class="brand-txt"><b>Programme Manager</b><small>India Exposition Mart Ltd.</small></span></a>
+      <a class="brand" href="#/events"><span class="mark"><img src="/assets/ieml-logo.png" alt=""></span><span class="brand-txt"><b>IEML Event Core</b><small>India Exposition Mart Ltd.</small></span></a>
       <a class="ev-card" href="#/events" title="Switch event"><b>${ev.name}${ev.edition ? ' ' + ev.edition : ''}</b>
         <span>${[ev.venue_city, ev.status[0].toUpperCase() + ev.status.slice(1)].filter(Boolean).join(', ')}</span></a>
       <nav class="nav" aria-label="Event sections">${TABS.filter((t) => !t.group).map(link)}<div class="sep"></div>${TABS.filter((t) => t.group).map(link)}</nav>
