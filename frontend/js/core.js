@@ -274,8 +274,8 @@ export function toast(msg, kind = 'ok') {
 }
 
 /* ---------------------------------------------------------------- brand (IEML logo + EventCore mark) */
-/** One lockup used everywhere: IEML logo | EventCore mark, then the product name. */
-export const brandInner = () => html`<span class="brand-chips"><span class="mark"><img src="/assets/ieml-logo.png" alt="India Exposition Mart Ltd."></span><i class="sep" aria-hidden="true"></i><span class="mark"><img src="/assets/ec-mark.png" alt="EventCore"></span></span><span class="brand-txt"><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></span>`;
+/** One lockup used everywhere: IEML logo (larger) + EventCore mark in a single card, then the product name, so it reads as one IEML product. */
+export const brandInner = () => html`<span class="brand-chips"><span class="lockup"><img class="lk-ieml" src="/assets/ieml-logo.png" alt="India Exposition Mart Ltd."><img class="lk-ec" src="/assets/ec-mark.png" alt="EventCore"></span></span><span class="brand-txt"><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></span>`;
 /** Footer shown on every signed-in / sign-in screen: makes it clear this is IEML's internal tool. */
 export const appFooter = () => html`<footer class="app-foot" role="contentinfo">${icon('lock', 'sm')}<p><b>IEML EventCore</b> is an internal tool of <b>India Exposition Mart Ltd. (IEML)</b>. For authorised IEML personnel only. Access is by invitation, and unauthorised use is prohibited.</p></footer>`;
 

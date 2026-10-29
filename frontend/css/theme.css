@@ -449,10 +449,18 @@ html[data-theme="dark"] .export-row:hover{background:var(--primary-soft)}
 
 /* ================================================================ brand lockup: IEML logo + EventCore mark */
 .brand-chips{display:flex;align-items:center;gap:9px;min-width:0}
-.brand-chips .sep{flex:none;width:1px;height:26px;background:linear-gradient(transparent,var(--accent),transparent);opacity:.9}
 .brand:hover .mark{transform:none}
-.brand-chips .mark:hover{transform:translateY(-2px) scale(1.05)}
-
+/* one white card holds both emblems: IEML logo larger, EventCore mark smaller, no divider */
+.lockup{--s:44px;display:inline-flex;align-items:center;gap:calc(var(--s)*.1);padding:calc(var(--s)*.14) calc(var(--s)*.22) calc(var(--s)*.14) calc(var(--s)*.18);
+  background:#fff;border-radius:calc(var(--s)*.34);box-shadow:0 0 0 1px #00000014,0 8px 20px -8px #0008;transition:transform .25s var(--ease)}
+.lockup img{display:block;width:auto;flex:none}
+.lockup .lk-ieml{height:var(--s)}
+.lockup .lk-ec{height:calc(var(--s)*.68)}
+.brand:hover .lockup{transform:translateY(-1px)}
+.plain-top .lockup{--s:34px;box-shadow:0 0 0 1px var(--rule)}
+.auth-art .lockup{--s:60px}
+.auth-mobile-brand .lockup{--s:40px;box-shadow:0 0 0 1px var(--rule)}
+.auth-art 
 /* sidebar: one glass card holds both logos and the name */
 .rail .brand{display:flex;flex-direction:column;align-items:stretch;gap:13px;padding:14px;margin:0 0 14px;border-radius:18px;
   border:1px solid #ffffff1a;background:linear-gradient(150deg,#ffffff1c,#ffffff07 70%);box-shadow:inset 0 1px 0 #ffffff14,0 14px 28px -18px #000}
@@ -468,7 +476,6 @@ html[data-theme="dark"] .export-row:hover{background:var(--primary-soft)}
 /* sign-in side panel */
 .auth-art .brand{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
 .auth-art .brand-chips{gap:13px}
-.auth-art .brand .sep{height:36px}
 .auth-art .brand .mark{width:60px;height:60px;border-radius:17px;padding:8px}
 .auth-mobile-brand{flex-wrap:wrap;row-gap:10px}
 .auth-mobile-brand .mark{width:42px;height:42px;padding:5px}
