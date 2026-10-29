@@ -1,5 +1,5 @@
 /*!
- * IEML Event Core: live agenda widget.
+ * IEML EventCore: live agenda widget.
  * Usage (one line, anywhere in a page):
  *   <script src="https://YOUR-HOST/embed.js" data-event="PUBLIC_KEY" async></script>
  * Options (all optional): data-accent="#1d3f91"  data-theme="light|dark|auto"  data-day="DAY_ID"  data-hall="HALL_ID"
@@ -12,7 +12,7 @@
   if (!script || script.getAttribute('data-pm-init')) return;
   script.setAttribute('data-pm-init', '1');
   var cfg = script.dataset, origin = new URL(script.src, location.href).origin, key = cfg.event;
-  if (!key) { console.error('[IEML Event Core] data-event is missing'); return; }
+  if (!key) { console.error('[IEML EventCore] data-event is missing'); return; }
   var interval = Math.max(5, parseInt(cfg.interval, 10) || 15) * 1000;
   var host = document.createElement('div');
   host.className = 'pm-agenda-host';

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IEML Event Core</title>
+  <title>IEML EventCore</title>
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#f6f4ee">
   <script>try{var t=localStorage.getItem("pm-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -14,8 +14,87 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/theme.css">
+
+  <style id="splash-css">
+  html.splash-on,html.splash-on body{overflow:hidden}
+  #splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#fff;
+    background-image:radial-gradient(900px 520px at 50% 42%,#f3f6fd,#fff 70%);
+    transition:opacity .55s ease,transform .55s ease;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #splash.out{opacity:0;transform:scale(1.035);pointer-events:none}
+  #splash .sp-stage{position:relative;width:min(88vw,880px);aspect-ratio:1015/540}
+  #splash img{position:absolute;display:block;height:auto;user-select:none;-webkit-user-drag:none;opacity:0}
+  #splash .sp-ieml{left:0.0%;top:15.556%;width:31.33%}
+  #splash .sp-mark{left:50.837%;top:0.0%;width:32.611%;--s:-14deg;
+    -webkit-mask-image:conic-gradient(from -90deg at 50% 50%,#000 0,#000 var(--s),transparent calc(var(--s) + 14deg));
+    mask-image:conic-gradient(from -90deg at 50% 50%,#000 0,#000 var(--s),transparent calc(var(--s) + 14deg))}
+  #splash .sp-word{left:37.537%;top:60.0%;width:62.463%;clip-path:inset(0 100% 0 0)}
+  #splash .sp-tag{left:37.635%;top:93.704%;width:59.113%}
+  #splash .sp-line{position:absolute;left:34.384%;top:22.778%;height:58.519%;width:2px;margin-left:-1px;
+    background:linear-gradient(#fff0,#c5cad6 22%,#c5cad6 78%,#fff0);transform:scaleY(0);opacity:0}
+  #splash.go .sp-ieml{animation:spSlide .7s cubic-bezier(.2,.8,.2,1) .05s both}
+  #splash.go .sp-line{animation:spLine .6s ease .35s both}
+  #splash.go .sp-mark{animation:spBuild 1.1s cubic-bezier(.2,.8,.2,1) .45s both}
+  #splash.go .sp-word{animation:spWipe .75s cubic-bezier(.65,0,.2,1) 1.2s both}
+  #splash.go .sp-tag{animation:spRise .6s ease 1.85s both}
+  #splash.go .sp-stage{animation:spSettle .55s ease 2.3s both}
+  @keyframes spSlide{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}
+  @keyframes spLine{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:scaleY(1)}}
+  @keyframes spBuild{0%{opacity:0;transform:scale(.8) rotate(-10deg)}12%{opacity:1}100%{opacity:1;transform:none}}
+  @keyframes spWipe{from{opacity:1;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+  @keyframes spRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes spSettle{0%,100%{transform:none}45%{transform:scale(1.025)}}
+  @media (prefers-reduced-motion:reduce){
+    #splash.go .sp-ieml,#splash.go .sp-mark,#splash.go .sp-word,#splash.go .sp-tag,#splash.go .sp-line{animation:spFade .4s ease both}
+    #splash .sp-word{clip-path:none}#splash .sp-mark{-webkit-mask-image:none;mask-image:none}#splash.go .sp-stage{animation:none}
+    #splash.out{transform:none}}
+  @keyframes spFade{from{opacity:0}to{opacity:1}}
+  </style>
 </head>
 <body>
+  <div id="splash" role="img" aria-label="IEML EventCore. Every event, organised.">
+    <div class="sp-stage">
+      <img class="sp-ieml" src="/assets/ec-ieml.png" alt="" draggable="false">
+      <span class="sp-line"></span>
+      <img class="sp-mark" src="/assets/ec-mark.png" alt="" draggable="false">
+      <img class="sp-word" src="/assets/ec-wordmark.png" alt="" draggable="false">
+      <img class="sp-tag" src="/assets/ec-tagline.png" alt="" draggable="false">
+    </div>
+  </div>
+  <script>
+  (function () {
+    var el = document.getElementById('splash'); if (!el) return;
+    var hash = location.hash || '';
+    var seen = false; try { seen = sessionStorage.getItem('pm-splash') === '1'; } catch (e) {}
+    var force = /[?&]splash=1/.test(location.search);
+    // Not shown on public links (speaker form / shared agenda), and only once per browser session.
+    if (/^#\/(shared|speaker-form)/.test(hash) || (seen && !force)) { el.remove(); return; }
+    try { sessionStorage.setItem('pm-splash', '1'); } catch (e) {}
+    var root = document.documentElement; root.classList.add('splash-on');
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var mark = el.querySelector('.sp-mark'), done = false, started = false;
+    var SWEEP_FROM = 450, SWEEP_TO = 1350, TOTAL = reduce ? 1100 : 2900;
+    function finish() {
+      if (done) return; done = true; el.classList.add('out');
+      setTimeout(function () { el.remove(); root.classList.remove('splash-on'); }, 600);
+    }
+    function start() {
+      if (started) return; started = true; var t0 = performance.now(); el.classList.add('go');
+      if (!reduce) (function tick(now) {            // the mark is "drawn" clockwise
+        var p = Math.min(1, Math.max(0, (now - t0 - SWEEP_FROM) / (SWEEP_TO - SWEEP_FROM)));
+        mark.style.setProperty('--s', (-14 + (1 - Math.pow(1 - p, 3)) * 374) + 'deg');
+        if (p < 1) requestAnimationFrame(tick);
+        else { mark.style.webkitMaskImage = 'none'; mark.style.maskImage = 'none'; }
+      })(t0);
+      setTimeout(finish, TOTAL);
+    }
+    // wait for the images so the animation never starts on half-loaded pieces
+    var imgs = [].slice.call(el.querySelectorAll('img')), left = imgs.length;
+    function one() { if (--left <= 0) start(); }
+    imgs.forEach(function (im) { if (im.complete) one(); else { im.addEventListener('load', one); im.addEventListener('error', one); } });
+    setTimeout(start, 1500);
+    el.addEventListener('click', finish); document.addEventListener('keydown', finish, { once: true });
+  })();
+  </script>
   <div id="app"></div>
   <div id="layer"></div>
   <div id="toasts" aria-live="polite"></div>
