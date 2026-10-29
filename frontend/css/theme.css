@@ -452,10 +452,6 @@ html[data-theme="dark"] .export-row:hover{background:var(--primary-soft)}
 .brand-chips .sep{flex:none;width:1px;height:26px;background:linear-gradient(transparent,var(--accent),transparent);opacity:.9}
 .brand:hover .mark{transform:none}
 .brand-chips .mark:hover{transform:translateY(-2px) scale(1.05)}
-.int-pill{display:inline-flex;align-items:center;gap:5px;margin-left:auto;padding:4px 9px 4px 7px;border-radius:99px;font:600 9px/1 var(--body);
-  letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;color:var(--accent);
-  border:1px solid var(--accent);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);background:transparent;background:color-mix(in srgb,var(--accent) 12%,transparent)}
-.int-pill svg{width:11px;height:11px;flex:none}
 
 /* sidebar: one glass card holds both logos and the name */
 .rail .brand{display:flex;flex-direction:column;align-items:stretch;gap:13px;padding:14px;margin:0 0 14px;border-radius:18px;
@@ -467,24 +463,31 @@ html[data-theme="dark"] .export-row:hover{background:var(--primary-soft)}
 .plain-top .brand{display:flex;align-items:center;gap:12px}
 .plain-top .brand-chips{gap:8px}
 .plain-top .brand .mark{width:38px;height:38px}
-.plain-top .int-pill{margin:0 6px 0 0}
-@media(max-width:760px){.plain-top .int-pill{display:none}.plain-top .brand-txt small{display:none}}
+@media(max-width:760px){.plain-top .brand-txt small{display:none}}
 
 /* sign-in side panel */
 .auth-art .brand{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
 .auth-art .brand-chips{gap:13px}
 .auth-art .brand .sep{height:36px}
 .auth-art .brand .mark{width:60px;height:60px;border-radius:17px;padding:8px}
-.auth-art .int-pill{margin-left:8px;padding:6px 11px 6px 9px;font-size:9.5px}
 .auth-mobile-brand{flex-wrap:wrap;row-gap:10px}
 .auth-mobile-brand .mark{width:42px;height:42px;padding:5px}
 
-/* "internal tool" notice on the sign-in screens */
-.int-note{display:flex;gap:11px;align-items:flex-start;margin-top:20px;padding:13px 14px;border-radius:14px;background:var(--sunk);
-  border:1px solid var(--rule);color:var(--ink-2);font-size:13px;line-height:1.5}
-.int-note svg{flex:none;width:19px;height:19px;margin-top:1px;color:var(--primary)}
-html[data-theme="dark"] .int-note svg{color:var(--accent)}
-.int-note b{display:block;margin-bottom:2px;color:var(--ink);font-size:13.5px}
+/* footer: states this is an IEML internal tool */
+.shell-col{display:flex;flex-direction:column;min-width:0;min-height:100vh}
+.shell-col>.main{flex:1}
+body:has(.plain-top)>#app{display:flex;flex-direction:column;min-height:100vh}
+body:has(.plain-top)>#app>.main{flex:1}
+.app-foot{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:auto;padding:14px clamp(18px,4vw,48px);
+  border-top:1px solid var(--rule);background:var(--surface);color:var(--ink-3);font-size:12.5px;line-height:1.5;text-align:center}
+.app-foot svg{flex:none;color:var(--accent)}
+.app-foot p{margin:0;max-width:92ch}
+.app-foot b{color:var(--ink-2);font-weight:600}
+.auth-form{display:flex;flex-direction:column;align-items:center;padding-bottom:0}
+.auth-form .box{margin:auto 0}
+.auth-form .app-foot{width:calc(100% + 64px);margin:24px -32px 0;background:transparent}
+@media(max-width:520px){.auth-form .app-foot{width:calc(100% + 28px);margin:20px -14px 0}}
+@media print{.app-foot{display:none}}
 
 /* Newer browsers: the same two values, derived from the current theme colours */
 @supports (color:color-mix(in srgb,red 50%,blue)){

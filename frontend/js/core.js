@@ -274,10 +274,10 @@ export function toast(msg, kind = 'ok') {
 }
 
 /* ---------------------------------------------------------------- brand (IEML logo + EventCore mark) */
-/** One lockup used everywhere: IEML logo | EventCore mark, then the product name. `pill` adds the "Internal" tag. */
-export const intPill = () => html`<span class="int-pill" title="Internal IEML tool">${icon('lock', 'sm')} Internal</span>`;
-export const brandInner = ({ pill = false } = {}) => html`<span class="brand-chips"><span class="mark"><img src="/assets/ieml-logo.png" alt="India Exposition Mart Ltd."></span><i class="sep" aria-hidden="true"></i><span class="mark"><img src="/assets/ec-mark.png" alt="EventCore"></span>${pill ? intPill() : ''}</span><span class="brand-txt"><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></span>`;
-export const intNote = () => html`<div class="int-note">${icon('shield')}<div><b>Internal IEML tool</b><span>Only authorised IEML team members can use this system. Access is by invitation from an event admin.</span></div></div>`;
+/** One lockup used everywhere: IEML logo | EventCore mark, then the product name. */
+export const brandInner = () => html`<span class="brand-chips"><span class="mark"><img src="/assets/ieml-logo.png" alt="India Exposition Mart Ltd."></span><i class="sep" aria-hidden="true"></i><span class="mark"><img src="/assets/ec-mark.png" alt="EventCore"></span></span><span class="brand-txt"><b>IEML EventCore</b><small>India Exposition Mart Ltd.</small></span>`;
+/** Footer shown on every signed-in / sign-in screen: makes it clear this is IEML's internal tool. */
+export const appFooter = () => html`<footer class="app-foot" role="contentinfo">${icon('lock', 'sm')}<p><b>IEML EventCore</b> is an internal tool of <b>India Exposition Mart Ltd. (IEML)</b>. For authorised IEML personnel only. Access is by invitation, and unauthorised use is prohibited.</p></footer>`;
 
 /** Wraps an action so failures show an error toast instead of silently breaking. */
 export const guard = (fn) => async (...a) => {

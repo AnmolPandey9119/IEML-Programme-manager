@@ -1,7 +1,7 @@
-import { api, S, acts, guard, html, icon, mount, setToken, val, raw_val, field, $, brandInner, intNote } from './core.js';
+import { api, S, acts, guard, html, icon, mount, setToken, val, raw_val, field, $, brandInner, appFooter } from './core.js';
 
 const art = html`<aside class="auth-art">
-  <a class="brand" href="#/login">${brandInner({ pill: true })}</a>
+  <a class="brand" href="#/login">${brandInner()}</a>
   <div>
     <h1>Plan the whole programme in one place.</h1>
     <p>Sessions, speakers and committees for your organising team, kept in step with your event website.</p>
@@ -14,7 +14,7 @@ const art = html`<aside class="auth-art">
 </aside>`;
 
 function authPage(inner) {
-  mount($('#app'), html`<div class="auth-wrap">${art}<main class="auth-form"><div class="box"><div class="auth-mobile-brand">${brandInner()}</div>${inner}${intNote()}</div></main></div>`);
+  mount($('#app'), html`<div class="auth-wrap">${art}<main class="auth-form"><div class="box"><div class="auth-mobile-brand">${brandInner()}</div>${inner}</div>${appFooter()}</main></div>`);
 }
 
 export async function viewLogin() {
