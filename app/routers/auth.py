@@ -8,7 +8,7 @@ from ..database import get_db
 from ..timeutil import utcnow
 from ..deps import get_current_user
 from ..models import Event, EventMember, Invitation, User
-from ..schemas import (AcceptInviteIn, InvitePreview, LoginIn, SetupIn, TokenOut, UserOut)
+from ..schemas import (AcceptInviteIn, FirstLoginIn, InvitePreview, LoginIn, SetupIn, TokenOut, UserOut)
 from ..security import create_access_token, hash_password, require_internal_email, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -27,6 +27,22 @@ def _throttled(key: str) -> bool:
 
 def _norm(email: str) -> str:
     return email.strip().lower()
+
+
+def _open_invites(db: DB, email: str) -> list[Invitation]:
+    return list(db.scalars(select(Invitation).where(
+        Invitation.email == email, Invitation.accepted_at.is_(None), Invitation.expires_at > utcnow())))
+
+
+def _join_invited_events(db: DB, user: User) -> None:
+    """Admin ne is email ko allow kiya hua hai -> user ko un events ka member bana do (role invite ke hisaab se)."""
+    for inv in _open_invites(db, user.email):
+        exists = db.scalar(select(EventMember.id).where(
+            EventMember.event_id == inv.event_id, EventMember.user_id == user.id))
+        if not exists:
+            db.add(EventMember(event_id=inv.event_id, user_id=user.id, role=inv.role))
+        inv.accepted_at = utcnow()
+    db.commit()
 
 
 @router.get("/setup-status")
@@ -53,10 +69,31 @@ def login(data: LoginIn, db: DB = Depends(get_db)):
     if _throttled(key):
         raise HTTPException(429, "Too many failed attempts. Please wait a few minutes and try again.")
     user = db.scalar(select(User).where(User.email == key))
+    if not user and _open_invites(db, key):
+        # Email admin ne allow kiya hai par account abhi bana nahi -> frontend "create password" step dikhayega
+        raise HTTPException(409, "FIRST_LOGIN")
     if not user or not user.is_active or not verify_password(data.password, user.password_hash):
         _FAILS.setdefault(key, []).append(time.time())
         raise HTTPException(401, "Incorrect email or password")
     _FAILS.pop(key, None)
+    _join_invited_events(db, user)  # naye invites (kisi dusre event ke) automatically add
+    return TokenOut(access_token=create_access_token(user.id))
+
+
+@router.post("/first-login", response_model=TokenOut)
+def first_login(data: FirstLoginIn, db: DB = Depends(get_db)):
+    """Admin-approved email: invitee apna naam + apna password chun kar account bana leta hai."""
+    key = _norm(data.email)
+    if db.scalar(select(User.id).where(User.email == key)):
+        raise HTTPException(409, "An account already exists for this email. Please sign in.")
+    if not _open_invites(db, key):
+        raise HTTPException(403, "This email has not been approved. Please ask an admin to invite you.")
+    if not data.full_name.strip():
+        raise HTTPException(422, "Full name is required")
+    user = User(email=key, full_name=data.full_name.strip(), password_hash=hash_password(data.password))
+    db.add(user)
+    db.flush()
+    _join_invited_events(db, user)
     return TokenOut(access_token=create_access_token(user.id))
 
 
@@ -96,7 +133,6 @@ def accept_invite(data: AcceptInviteIn, db: DB = Depends(get_db)):
         if not user.is_active or not verify_password(data.password, user.password_hash):
             raise HTTPException(401, "Incorrect password for this existing account")
     else:
-        require_internal_email(inv.email)
         if not data.full_name.strip():
             raise HTTPException(422, "Full name is required")
         user = User(email=inv.email, full_name=data.full_name.strip(),
@@ -109,4 +145,5 @@ def accept_invite(data: AcceptInviteIn, db: DB = Depends(get_db)):
         db.add(EventMember(event_id=inv.event_id, user_id=user.id, role=inv.role))
     inv.accepted_at = utcnow()
     db.commit()
+    _join_invited_events(db, user)
     return TokenOut(access_token=create_access_token(user.id))

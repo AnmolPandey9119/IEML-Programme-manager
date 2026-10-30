@@ -203,14 +203,14 @@ export async function viewTeam({ event: ev }) {
     <div class="pad small muted" style="border-top:1px solid var(--rule-2)">${Object.entries(ROLE_INFO).map(([r, d]) => `${r[0].toUpperCase() + r.slice(1)}: ${d}.`).join('  ')}</div></div></section>
 
   ${admin ? html`
-  <section class="section"><div class="lead"><h3>Invite someone</h3><p>They receive an email with a link that is valid for a limited time.</p></div>
+  <section class="section"><div class="lead"><h3>Invite someone</h3><p>Approve an email address here. That person can then sign in on the login page with that email and a password of their own choice, and joins this event automatically. You can also copy the link and share it manually.</p></div>
     <div class="panel"><div class="pad">
       <div class="inline-form">${field('Email address', html`<input id="i_email" type="email" placeholder="name@organisation.com" data-enter="invite">`)}
         ${field('Role', html`<select id="i_role"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select>`)}
-        <button class="btn primary" data-act="invite">${icon('mail', 'sm')} Send invitation</button></div>
+        <button class="btn primary" data-act="invite">${icon('mail', 'sm')} Approve email</button></div>
       ${invites.length ? html`<h3 style="margin:22px 0 4px">Pending invitations</h3><div class="rows">${invites.map((i) => html`<div class="row">
-          <div class="grow"><b>${i.email}</b> <span class="pill">${i.role}</span><div class="linkrow">${i.link}</div></div>
-          <button class="btn sm" data-act="copyInvite" data-link="${i.link}">${icon('copy', 'sm')} Copy link</button>
+          <div class="grow"><b>${i.email}</b> <span class="pill">${i.role}</span><div class="linkrow">${inviteLink(i)}</div></div>
+          <button class="btn sm" data-act="copyInvite" data-link="${inviteLink(i)}">${icon('copy', 'sm')} Copy link</button>
           <button class="btn sm danger" data-act="revokeInvite" data-id="${i.id}">Revoke</button></div>`)}</div>` : ''}
     </div></div></section>` : ''}
 
@@ -225,6 +225,9 @@ changes({
   setNotify: async (el) => { await api(`/events/${E().id}/members/${el.dataset.id}`, 'PATCH', { receive_notifications: el.checked }); toast(el.checked ? 'Email alerts on' : 'Email alerts off'); },
   setNotifType: async (el) => { await api(`/events/${E().id}/notification-settings`, 'PUT', { type: el.dataset.type, enabled: el.checked }); toast('Alert setting saved'); },
 });
+// Link hamesha current site ke origin se banta hai (server ke FRONTEND_URL pe depend nahi)
+const inviteLink = (i) => { const t = (i.link || '').split('/#/invite/')[1]; return t ? `${location.origin}/#/invite/${t}` : i.link; };
+
 acts({
   removeMember: async (el) => {
     if (await confirmDialog({ title: 'Remove this person?', message: 'They lose access to this event immediately.', confirmLabel: 'Remove', danger: true })) {
@@ -233,7 +236,7 @@ acts({
   },
   invite: async () => {
     const r = await api(`/events/${E().id}/invitations`, 'POST', { email: val('i_email'), role: $('#i_role').value });
-    toast(r.email_sent ? 'Invitation emailed' : 'Invitation created. Email is not configured, so copy the link below.', r.email_sent ? 'ok' : 'info');
+    toast(r.email_sent ? 'Invitation emailed' : 'Email approved. They can now sign in with this email, or you can copy the link below.', r.email_sent ? 'ok' : 'info');
     await refreshNow();
   },
   copyInvite: (el) => copyText(el.dataset.link, 'Invitation link copied'),

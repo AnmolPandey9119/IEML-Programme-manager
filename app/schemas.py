@@ -30,6 +30,12 @@ class AcceptInviteIn(BaseModel):
     full_name: str = Field(default="", max_length=200)
 
 
+class FirstLoginIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=72)
+    full_name: str = Field(default="", max_length=200)
+
+
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"

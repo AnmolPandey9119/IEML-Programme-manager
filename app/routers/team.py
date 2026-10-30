@@ -8,7 +8,6 @@ from ..deps import EventCtx, event_ctx
 from ..emailer import render_html, send_email
 from ..timeutil import utcnow
 from ..models import (EventMember, EventNotificationSetting, Invitation, NotificationType, Role, User)
-from ..security import require_internal_email
 from ..schemas import (InviteIn, InviteOut, MemberOut, MemberUpdate, NotifSettingIn, NotifSettingOut)
 
 router = APIRouter(prefix="/api/events/{event_id}", tags=["team"])
@@ -70,7 +69,7 @@ def _invite_out(inv: Invitation, sent: bool = False) -> InviteOut:
 @router.post("/invitations", response_model=InviteOut, status_code=201)
 def invite(data: InviteIn, ctx: EventCtx = Depends(admin)):
     email = data.email.strip().lower()
-    require_internal_email(email)
+    # Admin ka invite hi allow-list hai, isliye domain restriction yahan nahi lagti
     already = ctx.db.scalar(select(EventMember.id).join(User, User.id == EventMember.user_id).where(
         EventMember.event_id == ctx.event.id, User.email == email))
     if already:

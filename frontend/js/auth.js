@@ -20,7 +20,7 @@ function authPage(inner) {
 export async function viewLogin() {
   const { needs_setup } = await api('/auth/setup-status');
   if (needs_setup) { location.hash = '#/setup'; return; }
-  authPage(html`<h2>Welcome back</h2><p class="lead">Sign in with the email address your invitation was sent to.</p>
+  authPage(html`<h2>Welcome back</h2><p class="lead">Sign in with your email and password. Invited by an admin for the first time? Enter your email and any password you like, and we will set up your account.</p>
     ${field('Email', html`<input id="email" type="email" autocomplete="username" data-autofocus>`)}
     ${field('Password', html`<input id="pw" type="password" autocomplete="current-password" data-enter="login">`)}
     <button class="btn primary block" data-act="login">Sign in</button>`);
@@ -49,9 +49,29 @@ export async function viewInvite(token) {
     <button class="btn primary block" data-act="acceptInvite">Accept invitation</button>`);
 }
 
+function viewFirstLogin(email, pw) {
+  S.firstEmail = email;
+  authPage(html`<h2>Create your account</h2><p class="lead"><b>${email}</b> has been approved by an admin. Add your name and choose a password to continue.</p>
+    ${field('Full name', html`<input id="name" autocomplete="name" data-autofocus>`)}
+    ${field('Choose a password', html`<input id="pw" type="password" autocomplete="new-password" value="${pw}">`, { hint: 'At least 6 characters. You will use it to sign in next time.' })}
+    ${field('Confirm password', html`<input id="pw2" type="password" autocomplete="new-password" data-enter="firstLogin">`)}
+    <button class="btn primary block" data-act="firstLogin">Create account and sign in</button>
+    <p class="lead" style="margin-top:14px"><a href="#/login" data-act="backLogin">Back to sign in</a></p>`);
+  $('#name')?.focus();
+}
+
 const enter = async (r) => { setToken(r.access_token); S.me = null; location.hash = '#/events'; window.dispatchEvent(new HashChangeEvent('hashchange')); };
 acts({
-  login: async () => enter(await api('/auth/login', 'POST', { email: val('email'), password: raw_val('pw') })),
+  login: async () => {
+    const email = val('email'), password = raw_val('pw');
+    try { await enter(await api('/auth/login', 'POST', { email, password })); }
+    catch (e) { if (e && e.status === 409) { viewFirstLogin(email, password); return; } throw e; }
+  },
+  firstLogin: async () => {
+    if (raw_val('pw') !== raw_val('pw2')) throw new Error('Passwords do not match');
+    await enter(await api('/auth/first-login', 'POST', { email: S.firstEmail, password: raw_val('pw'), full_name: val('name') }));
+  },
+  backLogin: () => { location.hash = '#/login'; window.dispatchEvent(new HashChangeEvent('hashchange')); },
   firstSetup: async () => enter(await api('/auth/setup', 'POST', { full_name: val('name'), email: val('email'), password: raw_val('pw') })),
   acceptInvite: async () => enter(await api('/auth/accept-invite', 'POST', { token: S.inviteToken, password: raw_val('pw'), full_name: $('#name') ? val('name') : '' })),
 });
