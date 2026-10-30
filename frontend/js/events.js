@@ -210,7 +210,7 @@ export async function viewTeam({ event: ev }) {
         <button class="btn primary" data-act="invite">${icon('mail', 'sm')} Approve email</button></div>
       ${invites.length ? html`<h3 style="margin:22px 0 4px">Pending invitations</h3><div class="rows">${invites.map((i) => html`<div class="row">
           <div class="grow"><b>${i.email}</b> <span class="pill">${i.role}</span><div class="linkrow">${inviteLink(i)}</div></div>
-          <button class="btn sm" data-act="copyInvite" data-link="${inviteLink(i)}">${icon('copy', 'sm')} Copy link</button>
+          <button class="btn sm" data-act="copyTeamInvite" data-link="${inviteLink(i)}">${icon('copy', 'sm')} Copy link</button>
           <button class="btn sm danger" data-act="revokeInvite" data-id="${i.id}">Revoke</button></div>`)}</div>` : ''}
     </div></div></section>` : ''}
 
@@ -239,6 +239,6 @@ acts({
     toast(r.email_sent ? 'Invitation emailed' : 'Email approved. They can now sign in with this email, or you can copy the link below.', r.email_sent ? 'ok' : 'info');
     await refreshNow();
   },
-  copyInvite: (el) => copyText(el.dataset.link, 'Invitation link copied'),
+  copyTeamInvite: (el) => copyText(el.dataset.link, 'Invitation link copied'),
   revokeInvite: async (el) => { await api(`/events/${E().id}/invitations/${el.dataset.id}`, 'DELETE'); toast('Invitation revoked'); await refreshNow(); },
 });
