@@ -119,7 +119,7 @@ export const statusPill = (st) => html`<span class="pill ${STATUS_DOT[st] || ''}
    show a friendly notice and keep retrying quietly until the server answers. */
 const WAKE_AFTER_MS = 3000;     // show the notice if a request is still pending after this long
 const WAKE_RETRY_MS = 3000;     // pause between retries while the server starts
-const WAKE_GIVE_UP_MS = 150000; // stop retrying after this long
+const WAKE_GIVE_UP_MS = 180000; // stop retrying after this long
 let wakePending = 0, wakeTimer = null, wakeShown = false, wakeEl = null;
 
 function wakeStyles() {
@@ -167,43 +167,66 @@ function wakeEnd() { if (--wakePending <= 0) { wakePending = 0; clearTimeout(wak
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* Waking the backend.
-   The Vercel proxy (/api/...) alone does not reliably wake a sleeping Render service, which is why the page used to
-   stay stuck until someone opened the Render link by hand. So the browser calls the backend's /health URL directly,
-   which is exactly what opening that link does: Render holds the request while it starts and answers when it is up.
+   Opening the Render link by hand works because it is a real browser page visit (Accept: text/html), which is what
+   Render's free tier reacts to. A plain background fetch() from the Vercel page, or the Vercel proxy alone, does not
+   reliably wake a sleeping service. So when the backend does not answer, the page does the same thing a person would:
+   it silently "visits" the Render /health URL (hidden frame + a no-cors request, neither needs CORS headers) and then
+   keeps checking through the same /api route that real requests use, until a proper JSON answer comes back.
    Set the address once in index.html:  <meta name="backend-url" content="https://your-service.onrender.com"> */
 const BACKEND = (document.querySelector('meta[name="backend-url"]')?.content || '').trim().replace(/\/+$/, '');
 const AWAKE_FOR_MS = 8 * 60 * 1000;   // Render sleeps after ~15 min idle; re-check after 8 min without a successful call
-let lastOk = 0, awakeJob = null;
+const KICK_EVERY_MS = 25000;          // repeat the "visit" while still waiting, in case the first one was dropped
+let lastOk = 0, awakeJob = null, kickFrame = null;
 
-async function fetchWithTimeout(url, ms) {
+async function fetchWithTimeout(url, ms, init = {}) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
-  try { return await fetch(url, { cache: 'no-store', signal: ctl.signal }); } finally { clearTimeout(t); }
+  try { return await fetch(url, { cache: 'no-store', ...init, signal: ctl.signal }); } finally { clearTimeout(t); }
 }
-async function backendUp() {
-  try {   // 1) straight to the backend: this is what wakes it
-    const r = await fetchWithTimeout(BACKEND + '/health?t=' + Date.now(), 75000);
-    if (r.ok) { const d = await r.json().catch(() => ({})); if (d.db !== false) return true; }
-  } catch { /* still asleep, or the browser could not read the answer */ }
-  try {   // 2) through the proxy, in case the direct call is blocked
-    const r = await fetchWithTimeout('/api/auth/setup-status?t=' + Date.now(), 8000);
-    return r.ok;
+/** Sends the request that makes Render start the service, the same way opening the link in a tab does. */
+function kickBackend() {
+  if (!BACKEND) return;
+  const url = BACKEND + '/health?kick=' + Date.now();
+  try { fetch(url, { mode: 'no-cors', cache: 'no-store' }).catch(() => {}); } catch { /* ignore */ }
+  try {
+    if (kickFrame) kickFrame.remove();
+    kickFrame = document.createElement('iframe');
+    kickFrame.setAttribute('aria-hidden', 'true'); kickFrame.tabIndex = -1; kickFrame.title = '';
+    kickFrame.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+    kickFrame.src = url;
+    document.body.append(kickFrame);
+  } catch { /* ignore */ }
+}
+function dropKick() { if (kickFrame) { kickFrame.remove(); kickFrame = null; } }
+
+/** True only when the real API route answers with JSON (a sleeping/starting server answers with an HTML page or a 5xx). */
+async function backendUp(timeoutMs) {
+  try {
+    const r = await fetchWithTimeout('/api/auth/setup-status?t=' + Date.now(), timeoutMs);
+    return r.ok && /json/i.test(r.headers.get('content-type') || '');
   } catch { return false; }
 }
 function ensureAwake(force = false) {
   if (force) lastOk = 0;
   if (!BACKEND || Date.now() - lastOk < AWAKE_FOR_MS) return Promise.resolve();
   if (!awakeJob) awakeJob = (async () => {
-    wakeBegin();                                        // the "waking up" card appears if this takes more than a few seconds
     try {
-      const t0 = Date.now();
-      while (Date.now() - t0 < WAKE_GIVE_UP_MS) {
-        if (await backendUp()) { lastOk = Date.now(); return; }
-        await sleep(2000);
-      }
-    } finally { wakeEnd(); awakeJob = null; }
+      if (await backendUp(4000)) { lastOk = Date.now(); return; }   // already awake: nothing to show
+      wakeBegin();                                        // the "waking up" card appears if this takes more than a few seconds
+      try {
+        const t0 = Date.now();
+        let lastKick = 0;
+        while (Date.now() - t0 < WAKE_GIVE_UP_MS) {
+          if (Date.now() - lastKick >= KICK_EVERY_MS) { kickBackend(); lastKick = Date.now(); }
+          if (await backendUp(15000)) { lastOk = Date.now(); return; }
+          await sleep(2000);
+        }
+      } finally { wakeEnd(); }
+    } finally { dropKick(); awakeJob = null; }
   })();
   return awakeJob;
 }
+/* A tab left open overnight: check the server again the moment someone comes back to it. */
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ensureAwake(); });
 
 export async function api(path, method = 'GET', body, opts = {}) {
   const headers = {};

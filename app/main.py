@@ -63,7 +63,7 @@ async def wait_for_db(request: Request, call_next):
     return await call_next(request)
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])  # HEAD bhi: uptime monitors aksar HEAD bhejte hain
 def health():
     # "db" is false only while the background database setup is still running (cold start).
     return JSONResponse({"status": "ok", "db": _db_ready.is_set() or not _db_booting.is_set()},
