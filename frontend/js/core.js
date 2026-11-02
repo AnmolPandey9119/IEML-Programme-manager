@@ -175,7 +175,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
    Set the address once in index.html:  <meta name="backend-url" content="https://your-service.onrender.com"> */
 const BACKEND = (document.querySelector('meta[name="backend-url"]')?.content || '').trim().replace(/\/+$/, '');
 const AWAKE_FOR_MS = 8 * 60 * 1000;   // Render sleeps after ~15 min idle; re-check after 8 min without a successful call
-const KICK_EVERY_MS = 25000;          // repeat the "visit" while still waiting, in case the first one was dropped
+const KICK_EVERY_MS = 40000;          // repeat the "visit" while still waiting, in case the first one was dropped
 let lastOk = 0, awakeJob = null, kickFrame = null;
 
 async function fetchWithTimeout(url, ms, init = {}) {
@@ -198,27 +198,33 @@ function kickBackend() {
 }
 function dropKick() { if (kickFrame) { kickFrame.remove(); kickFrame = null; } }
 
-/** True only when the real API route answers with JSON (a sleeping/starting server answers with an HTML page or a 5xx). */
+/** Checks the real API route. up=true only on a JSON answer (a sleeping/starting server gives an HTML page or a 5xx).
+    wait = seconds the server asked us to hold off (429 / Retry-After), 0 otherwise. */
 async function backendUp(timeoutMs) {
   try {
     const r = await fetchWithTimeout('/api/auth/setup-status?t=' + Date.now(), timeoutMs);
-    return r.ok && /json/i.test(r.headers.get('content-type') || '');
-  } catch { return false; }
+    if (r.ok && /json/i.test(r.headers.get('content-type') || '')) return { up: true, wait: 0 };
+    const ra = parseInt(r.headers.get('retry-after') || '', 10);
+    return { up: false, wait: r.status === 429 ? Math.min(Math.max(ra || 10, 5), 30) : 0 };
+  } catch { return { up: false, wait: 0 }; }
 }
 function ensureAwake(force = false) {
   if (force) lastOk = 0;
   if (!BACKEND || Date.now() - lastOk < AWAKE_FOR_MS) return Promise.resolve();
   if (!awakeJob) awakeJob = (async () => {
     try {
-      if (await backendUp(4000)) { lastOk = Date.now(); return; }   // already awake: nothing to show
+      if ((await backendUp(4000)).up) { lastOk = Date.now(); return; }   // already awake: nothing to show
       wakeBegin();                                        // the "waking up" card appears if this takes more than a few seconds
       try {
         const t0 = Date.now();
-        let lastKick = 0;
+        let lastKick = 0, pause = 3000;
         while (Date.now() - t0 < WAKE_GIVE_UP_MS) {
           if (Date.now() - lastKick >= KICK_EVERY_MS) { kickBackend(); lastKick = Date.now(); }
-          if (await backendUp(15000)) { lastOk = Date.now(); return; }
-          await sleep(2000);
+          const r = await backendUp(15000);
+          if (r.up) { lastOk = Date.now(); return; }
+          // Poll gently: hammering a waking server (or getting 429) only delays it. Back off up to 12 s, longer if told to.
+          await sleep(r.wait ? r.wait * 1000 : pause);
+          pause = Math.min(pause + 1500, 12000);
         }
       } finally { wakeEnd(); }
     } finally { dropKick(); awakeJob = null; }
@@ -244,7 +250,7 @@ export async function api(path, method = 'GET', body, opts = {}) {
       let failed = false;
       try { res = await fetch('/api' + path, { method, headers, body: payload }); }
       catch { res = null; failed = true; }                       // network error / backend unreachable
-      const down = failed || res.status === 502 || res.status === 503 || res.status === 504;
+      const down = failed || res.status === 502 || res.status === 503 || res.status === 504 || (res.status === 429 && method === 'GET' && !path.startsWith('/auth/login'));
       if (!down) break;
       // Retrying is safe for reads, and for 502/503 on writes (the request never reached the app).
       // A 504 or a dropped connection on a write may have been processed, so those are not repeated.
@@ -257,7 +263,7 @@ export async function api(path, method = 'GET', body, opts = {}) {
       }
       showWake();                                                // we know the backend is down: tell the user now
       await ensureAwake(true);                                   // wake it directly, then retry through the proxy
-      await sleep(BACKEND ? 400 : WAKE_RETRY_MS);
+      await sleep(BACKEND ? 1500 : WAKE_RETRY_MS);
     }
   } finally { wakeEnd(); }
 
